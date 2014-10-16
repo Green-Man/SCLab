@@ -17,8 +17,10 @@ p0 = 1;
 %Execution of numerical methods
 eu = w01_euler( dpdt, p0, t0, dt, t_end );
 hu = w01_heun( dpdt, p0, t0, dt, t_end );
+rk1 = w01_rk1( dpdt, p0, t0, dt, t_end );
 
 %Plots of numerical methods
 plot(T(1:iter_to_plot), eu(1:iter_to_plot), 'Color', [1 0 0]);
-plot(T(1:iter_to_plot), eu(1:iter_to_plot), 'Color', [0 1 0]);
+plot(T(1:iter_to_plot), hu(1:iter_to_plot), 'Color', [0 1 0]);
+plot(T(1:iter_to_plot), rk1(1:iter_to_plot), 'Color', [0 0 1]);
 hold off;

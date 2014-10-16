@@ -5,7 +5,7 @@ function [ y ] = w01_huen( fy, y0, t0, dt, t_end )
     
     for n = 2:size(y,2)
         dydt1 = fy(y(n-1));
-        dydt2 = fy(y(n));
+        dydt2 = fy(y(n-1)+dt*dydt1);
         y(n) = y(n-1) + dt*(dydt1+dydt2)/2;
     end
 
