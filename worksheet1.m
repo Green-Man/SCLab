@@ -1,9 +1,9 @@
 clear all;clf;hold on;
-disp('==================')
+disp('============================================')
 
 %Time boundaries
 t_start = 0;
-dts = fliplr([1/1 1/2 1/4 1/8]);
+dts = fliplr([1/1 1/2 1/4 1/8]); % Flip list to compute the most accurate solution first
 t_end = 5;
 
 %Given ODE and initial condition
@@ -11,7 +11,7 @@ dpdt = @(p) (1 - p/10)*p;
 p0 = 1;
 
 methods = {'Euler', 'Heun', 'Runge-Kutta'};
-i = 1;
+methodIdx = 1;
 exactError = zeros(size(methods,2), size(dts,2));
 approxError = zeros(size(methods,2), size(dts,2));
 
@@ -19,18 +19,19 @@ for method = methods
     %Plot each method on the separate subplot
     figure(1)
     hold on
-    subplot(size(methods,2),1,i);
+    subplot(size(methods,2),1,methodIdx);
     legendStrings = {'Analytic'};
     
     %Analytical solution and its plot
     p = @(t) 10 ./ (1+9*exp(-t));
-    P = p(t_start:dts(1):t_end);
-    plot(t_start:dts(1):t_end, P, 'Color', [0.3 0.3 0.3]);
+    exactT = t_start:dts(1):t_end;
+    P = p(exactT);
+    plot(exactT, P, 'Color', [0.3 0.3 0.3]);
     
     nsBest = [];	%the most precise solution
-    j=1;
-    for dt = (dts)
-
+    timestepIdx=1;
+    for dt = dts
+        
         T = t_start:dt:t_end;
         
         %Execution of numerical methods
@@ -42,64 +43,60 @@ for method = methods
         end
         
         %Plots of numerical methods
-        gColor = [0,0,0]; gColor(i) = min([dt^0.5 1]);
+        gColor = [0,0,0]; gColor(methodIdx) = min([dt^0.5 1]);
         hold on;
         plot(T, ns, '^', 'Color', gColor);
         hold on;
-        
-        interpNs = interp1(t_start:dt:t_end, ns, t_start:dts(1):t_end, 'linear');
-        
+
         %Compute exact error
-        exactErrorF = @(N) sqrt(sum((N-P).^2)*dt/5);
-        exactError(i,j) = exactErrorF(interpNs);
+        interpP = interp1(exactT, P, t_start:dt:t_end, 'linear');
+        exactErrorF = @(N) sqrt(sum((N-interpP).^2)*dt/5);
+        exactError(methodIdx,timestepIdx) = exactErrorF(ns);
         
         %Compute approximation error
-        approximationErrorF = @(N) sqrt(sum((N-nsBest).^2)*dt/5);
+        interpNsBest = interp1(exactT, nsBest, t_start:dt:t_end, 'linear');
+        approximationErrorF = @(N) sqrt(sum((N-interpNsBest).^2)*dt/5);
         if dt ~= dts(1)
-            approxError(i,j) = approximationErrorF(interpNs);
+            approxError(methodIdx,timestepIdx) = approximationErrorF(ns);
         end
         
         %Format a legend
-        errorString = sprintf('exactError=%2.6f', exactError(i,j));
+        errorString = sprintf('exactError=%2.6f', exactError(methodIdx,timestepIdx));
         dtString = sprintf('dt=%2.3f', dt);
         nextLegendString = sprintf('%s', dtString);
         legendStrings = [legendStrings, nextLegendString];
         
-        j = j + 1;
+        timestepIdx = timestepIdx + 1;
     end
     
     legend(legendStrings, 'Location', 'southeast')
     title(method);
-    i=i+1;
+    methodIdx=methodIdx+1;
 end
 
 %Display exact error
 disp('Exact error')
-disp([exactError])
+disp(exactError)
 
 
-%compute reduction error when "decreasing dt at two times"
-re = ones(size(exactError,1),size(exactError,1)-2);
+%compute reduction error when "decreasing dt two times"
+re = ones(size(exactError));
 for method = 1:size(exactError,1)
-    for dt = 1:size(dts,2)-1
-        re(method, dt) = exactError(method, dt+1)/exactError(method, dt);
+    for dtIdx = 2:size(exactError,2)
+        re(method, dtIdx) = exactError(method, dtIdx)/exactError(method, dtIdx-1);
     end
 end
-disp('Reduction error')
+disp('Errors reduction')
+format shortG
 disp(re)
-for i = 1:size(methods,2)
-    subplot(size(methods,2),1,i);
-    title([methods(i) sprintf('Mean error reduction %2.2f', mean(re(i,:),2))])
+
+for methodIdx = 1:size(methods,2)
+    subplot(size(methods,2),1,methodIdx);
+    title([methods(methodIdx) sprintf('Mean error reduction %2.2f', mean(re(methodIdx,:),2))])
 end
 
-%Compute approximation error
-disp('Approximation error')
+%Display table of approximation errors
+disp('Approximation errors')
 disp(approxError)
-
-% exactError(i,j) = exactErrorF(ns);
-
-
-
-
 
 hold off;
