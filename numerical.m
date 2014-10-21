@@ -1,5 +1,6 @@
-function [ y ] = numerical( fy, y0, t_start, dt, t_end, method )
+function [ y t ] = numerical( fy, y0, t_start, dt, t_end, method )
 %NUMERICAL methods
+    tic
     y = zeros(1,size(t_start:dt:t_end,2));
     y(1) = y0;
     
@@ -25,5 +26,6 @@ function [ y ] = numerical( fy, y0, t_start, dt, t_end, method )
             y(n) = y(n-1) + dt*dydt;
         end
     end
+    t = toc;
 end
 

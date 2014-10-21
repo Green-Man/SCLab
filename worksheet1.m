@@ -6,8 +6,9 @@ format shortG
 
 %Time boundaries
 t_start = 0;
-dts = fliplr([1/1 1/2 1/4 1/8]); % Flip list to compute the most accurate solution first
-t_end = 5;
+dts = fliplr([1/1 1/2 1/4 1/8 1/16]); % Flip list to compute the most accurate solution first
+t_end = 5*10^4;
+t_end_plot = 5;
 
 %Given ODE and initial condition
 dpdt = @(p) (1 - p/10)*p;
@@ -17,6 +18,7 @@ methods = {'Euler', 'Heun', 'Runge-Kutta'};
 methodIdx = 1;
 exactError = zeros(size(methods,2), size(dts,2));
 approxError = zeros(size(methods,2), size(dts,2));
+times = zeros(size(methods,2), size(dts,2));
 
 %Analytical solution
 p = @(t) 10 ./ (1+9*exp(-t));
@@ -29,7 +31,7 @@ for method = methods
     legendStrings = {'Analytic'};
     
     %Plot the exact solution
-    plot(exactT, P, 'Color', [0.3 0.3 0.3]);
+    plot(exactT(1:round(t_end_plot/dts(1))), P(1:round(t_end_plot/dts(1))), 'Color', [0.3 0.3 0.3]);
     
     nsBest = [];	%the most precise solution
     timestepIdx=1;
@@ -37,7 +39,7 @@ for method = methods
         T = t_start:dt:t_end;
         
         %Execution of numerical methods
-        ns = numerical( dpdt, p0, t_start, dt, t_end , method);
+        [ns times(methodIdx,timestepIdx)] = numerical( dpdt, p0, t_start, dt, t_end , method);
         
         %Save the most precise solution
         if dt == dts(1) nsBest = ns; end
@@ -45,7 +47,7 @@ for method = methods
         %Plot of the numerical methods
         hold on;
         gColor = [0,0,0]; gColor(methodIdx) = min([dt^0.5 1]);
-        plot(T, ns, '^', 'Color', gColor);
+        plot(T(1:round(t_end_plot/dt)), ns(1:round(t_end_plot/dt)), '^', 'Color', gColor);
 
         %Compute the exact error
         interpP = interp1(exactT, P, t_start:dt:t_end, 'linear');
@@ -99,4 +101,13 @@ end
 disp('Approximation errors')
 disp(approxError)
 
+%Display table of timing for each method and dt
+disp('time spent, s')
+disp(times)
+
+disp('accuracy / time spent = "efficency"')
+disp(1./(times.*exactError))
+figure(2)
+semilogy(dts, 1./(times.*exactError));
+figure(1)
 hold off;
