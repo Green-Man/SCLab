@@ -1,5 +1,8 @@
 clear all;clf;hold on;
 disp('============================================')
+figure(1)
+hold on
+format shortG
 
 %Time boundaries
 t_start = 0;
@@ -15,40 +18,36 @@ methodIdx = 1;
 exactError = zeros(size(methods,2), size(dts,2));
 approxError = zeros(size(methods,2), size(dts,2));
 
+%Analytical solution
+p = @(t) 10 ./ (1+9*exp(-t));
+exactT = t_start:dts(1):t_end;
+P = p(exactT);
+
 for method = methods
     %Plot each method on the separate subplot
-    figure(1)
-    hold on
     subplot(size(methods,2),1,methodIdx);
     legendStrings = {'Analytic'};
     
-    %Analytical solution and its plot
-    p = @(t) 10 ./ (1+9*exp(-t));
-    exactT = t_start:dts(1):t_end;
-    P = p(exactT);
+    %Plot the exact solution
     plot(exactT, P, 'Color', [0.3 0.3 0.3]);
     
     nsBest = [];	%the most precise solution
     timestepIdx=1;
     for dt = dts
-        
         T = t_start:dt:t_end;
         
         %Execution of numerical methods
         ns = numerical( dpdt, p0, t_start, dt, t_end , method);
         
         %Save the most precise solution
-        if dt == dts(1)
-            nsBest = ns;
-        end
+        if dt == dts(1) nsBest = ns; end
         
-        %Plots of numerical methods
+        %Plot of the numerical methods
+        hold on;
         gColor = [0,0,0]; gColor(methodIdx) = min([dt^0.5 1]);
-        hold on;
         plot(T, ns, '^', 'Color', gColor);
-        hold on;
 
-        %Compute exact error
+        %Compute the exact error
         interpP = interp1(exactT, P, t_start:dt:t_end, 'linear');
         exactErrorF = @(N) sqrt(sum((N-interpP).^2)*dt/5);
         exactError(methodIdx,timestepIdx) = exactErrorF(ns);
@@ -74,25 +73,26 @@ for method = methods
     methodIdx=methodIdx+1;
 end
 
-%Display exact error
+%Display the table of the exact errors
 disp('Exact error')
 disp(exactError)
 
-
-%compute reduction error when "decreasing dt two times"
+%Compute the error reduction when "decreasing dt two times"
 re = ones(size(exactError));
 for method = 1:size(exactError,1)
     for dtIdx = 2:size(exactError,2)
         re(method, dtIdx) = exactError(method, dtIdx)/exactError(method, dtIdx-1);
     end
 end
+
+%Display table for the error reductions
 disp('Errors reduction')
-format shortG
 disp(re)
 
+%Print the error reduction mean in the plot caption
 for methodIdx = 1:size(methods,2)
     subplot(size(methods,2),1,methodIdx);
-    title([methods(methodIdx) sprintf('Mean error reduction %2.2f', mean(re(methodIdx,:),2))])
+    title([methods(methodIdx) sprintf('Error reduction mean %2.2f', mean(re(methodIdx,2:size(re,2)),2))])
 end
 
 %Display table of approximation errors
