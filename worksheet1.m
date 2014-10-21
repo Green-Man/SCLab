@@ -1,71 +1,105 @@
-clear all;
-clf;
-hold on;
+clear all;clf;hold on;
+disp('==================')
 
 %Time boundaries
-t0 =0;
-dts = [1/1 1/2 1/4 1/8 1/16];
-t_end = 10.^1;
+t_start = 0;
+dts = fliplr([1/1 1/2 1/4 1/8]);
+t_end = 5;
 
-
-%Given population ODE and initial condition
+%Given ODE and initial condition
 dpdt = @(p) (1 - p/10)*p;
 p0 = 1;
 
-methods = {'euler', 'heun', 'rk'};
+methods = {'Euler', 'Heun', 'Runge-Kutta'};
 i = 1;
-ae = ones(size(methods,2), size(dts,2));
+exactError = zeros(size(methods,2), size(dts,2));
+approxError = zeros(size(methods,2), size(dts,2));
+
 for method = methods
+    %Plot each method on the separate subplot
     figure(1)
     hold on
     subplot(size(methods,2),1,i);
     legendStrings = {'Analytic'};
+    
+    %Analytical solution and its plot
+    p = @(t) 10 ./ (1+9*exp(-t));
+    P = p(t_start:dts(1):t_end);
+    plot(t_start:dts(1):t_end, P, 'Color', [0.3 0.3 0.3]);
+    
+    nsBest = [];	%the most precise solution
     j=1;
-    for dt = dts
+    for dt = (dts)
 
-        T = t0:dt:t_end;
-        %Analytical solution and its plot
-        p = @(t) 10 ./ (1+9*exp(-t));
-        P = p(T);
-        plot(T, P, 'Color', [0.8 0.8 0.8]);
+        T = t_start:dt:t_end;
         
         %Execution of numerical methods
-        ns = numerical( dpdt, p0, t0, dt, t_end , method);
+        ns = numerical( dpdt, p0, t_start, dt, t_end , method);
+        
+        %Save the most precise solution
+        if dt == dts(1)
+            nsBest = ns;
+        end
         
         %Plots of numerical methods
-        gColor = [0,0,0]; gColor(i) = dt^0.5;
+        gColor = [0,0,0]; gColor(i) = min([dt^0.5 1]);
         hold on;
-        plot(T, ns, 'Color', gColor);
+        plot(T, ns, '^', 'Color', gColor);
         hold on;
         
-        %Plot absolute errors
-%         plot(T, ns-P, 'Color', [dt^0.5 0 0]);
-
+        interpNs = interp1(t_start:dt:t_end, ns, t_start:dts(1):t_end, 'linear');
+        
+        %Compute exact error
+        exactErrorF = @(N) sqrt(sum((N-P).^2)*dt/5);
+        exactError(i,j) = exactErrorF(interpNs);
+        
         %Compute approximation error
-        approxError = @(N) sqrt(sum((N-P).^2)*dt/5);
-        ae(i,j) = approxError(ns);
-        legendStrings = [legendStrings, {sprintf('dt=%2.3f ae=%2.6f', dt, ae(i,j))}];
+        approximationErrorF = @(N) sqrt(sum((N-nsBest).^2)*dt/5);
+        if dt ~= dts(1)
+            approxError(i,j) = approximationErrorF(interpNs);
+        end
+        
+        %Format a legend
+        errorString = sprintf('exactError=%2.6f', exactError(i,j));
+        dtString = sprintf('dt=%2.3f', dt);
+        nextLegendString = sprintf('%s', dtString);
+        legendStrings = [legendStrings, nextLegendString];
+        
         j = j + 1;
     end
     
-    legend(legendStrings)
+    legend(legendStrings, 'Location', 'southeast')
     title(method);
     i=i+1;
 end
 
+%Display exact error
+disp('Exact error')
+disp([exactError])
+
+
 %compute reduction error when "decreasing dt at two times"
-re = ones(size(ae,1),size(ae,1)-2);
-for method = 1:size(ae,1)
-    for dt = 2:size(dts,2)
-        re(method, dt-1) = ae(method, dt-1)/ae(method, dt);
+re = ones(size(exactError,1),size(exactError,1)-2);
+for method = 1:size(exactError,1)
+    for dt = 1:size(dts,2)-1
+        re(method, dt) = exactError(method, dt+1)/exactError(method, dt);
     end
 end
-mean(re,2)
+disp('Reduction error')
+disp(re)
+for i = 1:size(methods,2)
+    subplot(size(methods,2),1,i);
+    title([methods(i) sprintf('Mean error reduction %2.2f', mean(re(i,:),2))])
+end
 
-%plot reduction error
-% figure(2)
-% plot(dts(2:size(dts,2)), re')
-% axis([min(dts) max(dts) 0 17]);
+%Compute approximation error
+disp('Approximation error')
+disp(approxError)
+
+% exactError(i,j) = exactErrorF(ns);
+
+
+
 
 
 hold off;
