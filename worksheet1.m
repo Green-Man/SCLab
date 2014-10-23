@@ -6,8 +6,8 @@ format shortG
 
 %Time boundaries
 t_start = 0;
-dts = fliplr([1/1 1/2 1/4 1/8 1/16]); % Flip list to compute the most accurate solution first
-t_end = 5*10^4;
+dts = fliplr([1/1 1/2 1/4 1/8]); % Flip list to compute the most accurate solution first
+t_end = 5*10^0;
 t_end_plot = 5;
 
 %Given ODE and initial condition
@@ -50,12 +50,14 @@ for method = methods
         plot(T(1:round(t_end_plot/dt)), ns(1:round(t_end_plot/dt)), '^', 'Color', gColor);
 
         %Compute the exact error
-        interpP = interp1(exactT, P, t_start:dt:t_end, 'linear');
+        %interpP = interp1(exactT, P, t_start:dt:t_end, 'linear');
+        interpP = P(1:dt/dts(1):length(P));
         exactErrorF = @(N) sqrt(sum((N-interpP).^2)*dt/5);
         exactError(methodIdx,timestepIdx) = exactErrorF(ns);
         
         %Compute approximation error
-        interpNsBest = interp1(exactT, nsBest, t_start:dt:t_end, 'linear');
+        %interpNsBest = interp1(exactT, nsBest, t_start:dt:t_end, 'linear');
+        interpNsBest = nsBest(1:dt/dts(1):length(nsBest));
         approximationErrorF = @(N) sqrt(sum((N-interpNsBest).^2)*dt/5);
         if dt ~= dts(1)
             approxError(methodIdx,timestepIdx) = approximationErrorF(ns);
