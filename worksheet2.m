@@ -6,31 +6,36 @@ format shortG
 
 %Time boundaries
 t_start = 0;
-dts = fliplr([1/1 1/2 1/4 1/8]); % Flip list to compute the most accurate solution first
+dts = ones(1,6);
+for dti = 1:length(dts)
+    dts(dti) = 1./(2.^(dti-1));
+end
+dts = fliplr(dts);
+% dts = dts(3);
 t_end = 5*10^0;
-t_end_plot = 5;
+t_end_plot = 1.5;
+newtonE = 1e-4;
 
 %Given ODE and initial condition
-dpdt = @(p) (1 - p/10)*p;
-p0 = 1;
+dpdt = @(p) 7*(1 - p/10)*p;
+p0 = 20;
+
+%Analytical solution
+p = @(t) 200 ./ (20-10*exp(-7*t));
+exactT = t_start:dts(1):t_end;
+P = p(exactT);
 
 methods = {'Explicit Euler', 'Heun', 'Runge-Kutta'};
+methods = {'Explicit Euler', 'Heun', 'Implicit Euler'};
 methodIdx = 1;
 exactError = zeros(size(methods,2), size(dts,2));
 approxError = zeros(size(methods,2), size(dts,2));
 times = zeros(size(methods,2), size(dts,2));
 
-%Analytical solution
-p = @(t) 10 ./ (1+9*exp(-t));
-exactT = t_start:dts(1):t_end;
-P = p(exactT);
-
 for method = methods
     %Plot each method on the separate subplot
-    subplot(size(methods,2),1,methodIdx);
+    subplot(1,size(methods,2),methodIdx);
     legendStrings = {'Analytic'};
-    
-    %Plot the exact solution
     plot(exactT(1:round(t_end_plot/dts(1))), P(1:round(t_end_plot/dts(1))), 'Color', [0.3 0.3 0.3]);
     
     nsBest = [];	%the most precise solution
@@ -39,15 +44,15 @@ for method = methods
         T = t_start:dt:t_end;
         
         %Execution of numerical methods
-        [ns times(methodIdx,timestepIdx)] = numerical( dpdt, p0, t_start, dt, t_end , method);
+        [ns times(methodIdx,timestepIdx)] = numerical( dpdt, p0, t_start, dt, t_end , method, newtonE);
         
         %Save the most precise solution
         if dt == dts(1) nsBest = ns; end
         
         %Plot of the numerical methods
-        hold on;
+        hold on; ylim([0 20]);
         gColor = [0,0,0]; gColor(methodIdx) = min([dt^0.5 1]);
-        plot(T(1:round(t_end_plot/dt)), ns(1:round(t_end_plot/dt)), '^', 'Color', gColor);
+        plot(T(1:round(t_end_plot/dt)), ns(1:round(t_end_plot/dt)), 'x', 'Color', gColor);
 
         %Compute the exact error
         %interpP = interp1(exactT, P, t_start:dt:t_end, 'linear');
@@ -75,41 +80,9 @@ for method = methods
     legend(legendStrings, 'Location', 'southeast')
     title(method);
     methodIdx=methodIdx+1;
-end
+end;
 
-%Display the table of the exact errors
-disp('Exact error')
-disp(exactError)
-
-%Compute the error reduction when "decreasing dt two times"
-re = ones(size(exactError));
-for method = 1:size(exactError,1)
-    for dtIdx = 2:size(exactError,2)
-        re(method, dtIdx) = exactError(method, dtIdx)/exactError(method, dtIdx-1);
-    end
-end
-
-%Display table for the error reductions
-disp('Errors reduction')
-disp(re)
-
-%Print the error reduction mean in the plot caption
-for methodIdx = 1:size(methods,2)
-    subplot(size(methods,2),1,methodIdx);
-    title([methods(methodIdx) sprintf('Error reduction mean %2.2f', mean(re(methodIdx,2:size(re,2)),2))])
-end
-
-%Display table of approximation errors
-disp('Approximation errors')
-disp(approxError)
-
-%Display table of timing for each method and dt
-disp('time spent, s')
-disp(times)
-
-disp('accuracy / time spent = "efficency"')
-disp(1./(times.*exactError))
-figure(2)
-semilogy(dts, 1./(times.*exactError));
-figure(1)
 hold off;
+
+% clf;
+% plot(T, f(T));
