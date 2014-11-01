@@ -18,6 +18,7 @@ newtonE = 1e-4;
 
 %Given ODE and initial condition
 dpdt = @(p) 7*(1 - p/10)*p;
+dpdt_prime = @(p) 7*(1 - p/5);
 p0 = 20;
 
 %Analytical solution
@@ -44,7 +45,7 @@ for method = methods
         T = t_start:dt:t_end;
         
         %Execution of numerical methods
-        [ns times(methodIdx,timestepIdx)] = numerical( dpdt, p0, t_start, dt, t_end , method, newtonE);
+        [ns times(methodIdx,timestepIdx)] = numerical( dpdt, dpdt_prime, p0, t_start, dt, t_end , method, newtonE);
         
         %Save the most precise solution
         if dt == dts(1) nsBest = ns; end

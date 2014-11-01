@@ -1,13 +1,11 @@
-function [ r ] = nsolve( f, fp, e)
+function [ x ] = nsolve( f, fp, e)
 %NSOLVE Newton's method to find roots of the function f
 %   Detailed explanation goes here
     
-    xroot = 20; %TODO: estimate it better
-    while abs(f(xroot)) > e
-        xroot = -f(xroot)./fp(xroot);
+    x = 20; %TODO: estimate it better
+    while abs(f(x)) > e
+        x = (fp(x)*x-f(x))./fp(x);
     end;
-
-    r = xroot;
 
 end
 

@@ -1,4 +1,4 @@
-function [ y t ] = numerical( fy, y0, t_start, dt, t_end, method, newtonE )
+function [ y t ] = numerical( fy, fy_prime, y0, t_start, dt, t_end, method, newtonE )
 %NUMERICAL methods
     tic
     y = zeros(1,size(t_start:dt:t_end,2));
@@ -27,12 +27,12 @@ function [ y t ] = numerical( fy, y0, t_start, dt, t_end, method, newtonE )
         end
     
  	elseif  strcmp(method,'Implicit Euler')
-        f = @(x) y0+7.*x*(1-x./10)*dt;
-        fp = @(x) 7.*dt.*(1-x./5)-1;
-        r = nsolve(f, fp, newtonE);
         for n = 2:size(y,2)
-            dydt = fy(y(n-1));
-            y(n) = y(n-1) + dt*dydt;
+            
+            f =  @(x) y(n-1)+fy(x)*dt-x;
+            fp = @(x) fy_prime(x)*dt-1;
+            y_predict = nsolve(f, fp, newtonE);
+            y(n) = y(n-1) + dt*fy(y_predict);
         end
     end
     t = toc;
