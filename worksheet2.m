@@ -1,4 +1,4 @@
-clc;clf;hold on;
+clf;hold on;
 disp('============================================')
 figure(1)
 hold on
@@ -11,26 +11,35 @@ for dti = 1:length(dts)
     dts(dti) = 1./(2.^(dti-1));
 end
 dts = fliplr(dts);
+% dts = [1/4];
 
-t_end = 5*10^0*1;
+t_end = 20e0;
 t_end_plot = t_end;
 newtonE = 1e-4;
 
 %Given ODE and initial condition
-dpdt = @(p) 7.*(1 - p./10).*p;
-dpdt_prime = @(p) 7.*(1 - p./5);
-p0 = 20;
+a = 1;
+b = -0.1/10;
+c = 1.1;
+dpdt = @(p) c.*(a + b*p).*p;
+dpdt_prime = @(p) c.*(a + 2*b*p);
+L1 = @(y0,dt) -(y0*(2*c*a*dt+c*b*dt*y0+2))/(c*b*dt*y0-2);
+L2 = @(y0,dt) -(y0*(c*a*dt+c*b*dt*y0+2))/(c*a*dt+c*b*dt*y0-2);
+p0 = 12;
 
 %Analytical solution
 p = @(t) 200 ./ (20-10*exp(-7*t));
 exactT = t_start:dts(1):t_end;
 P = p(exactT);
 
-methods = {'Implicit Euler', 'Adams-Moulton'};
-methods = {'Implicit Euler',...
-           'Adams-Moulton',...
-           'Adams-Moulton L1',...
-           'Adams-Moulton L2'};
+methods = {'Adams-Moulton L1', 'Adams-Moulton L2'};
+% methods = {'Explicit Euler',...
+%            'Heun',... 
+%            'Implicit Euler',...
+%            'Adams-Moulton',...
+%            'Adams-Moulton L1',...
+%            'Adams-Moulton L2'};
+
 methodIdx = 1;
 exactError = zeros(size(methods,2), size(dts,2));
 approxError = zeros(size(methods,2), size(dts,2));
@@ -52,19 +61,19 @@ for method = methods
     
     for dt = dts
         T = t_start:dt:t_end;
-        hold on; ylim([0 20]);
+        hold on; ylim([-0 100]);
         gColor = hsv2rgb([timestepIdx/length(dts) 0.95 0.6]);
         
         %Execution of numerical methods
         [ns,...
          times(methodIdx,timestepIdx),...
-         e] = numerical(dpdt, dpdt_prime, p0,...
+         e] = numerical(dpdt, dpdt_prime, L1, L2, p0,...
                         t_start, dt, t_end , method, newtonE);
         
         e = 1/realmin('double')*(1.-e)+e.*ns;
         
         %Save the most precise solution
-        if dt == dts(1) nsBest = ns; end
+        if dt == dts(1), nsBest = ns; end
         
         %Plot of the numerical methods
         plot(T(1:round(t_end_plot/dt)), e(1:round(t_end_plot/dt)),...
@@ -101,9 +110,32 @@ for method = methods
         timestepIdx = timestepIdx + 1;
     end
     
-    legend(graphs, legendStrings, 'Location', 'southeast')
+    legend(graphs, legendStrings)
     title(method);
     methodIdx=methodIdx+1;
 end;
+
+exactError = fliplr(exactError);
+approxError = fliplr(approxError);
+
+%Display the table of the exact errors
+disp('Exact error')
+disp((exactError))
+
+%Compute the error reduction when "decreasing dt two times"
+re = ones(size(exactError));
+for method = 1:size(exactError,1)
+    for dtIdx = 2:size(exactError,2)
+        re(method, dtIdx) = exactError(method, dtIdx-1)/exactError(method, dtIdx);
+    end
+end
+
+%Display table for the error reductions
+disp('Errors reduction')
+disp((re))
+
+%Display table of approximation errors
+disp('Approximation errors')
+disp((approxError))
 
 hold off;

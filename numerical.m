@@ -1,4 +1,4 @@
-function [ y, t, e] = numerical( fy, fy_prime, y0,...
+function [ y, t, e] = numerical( fy, fy_prime, L1, L2, y0,...
                                 t_start, dt, t_end,...
                                 method, newtonE )
 %NUMERICAL methods
@@ -60,12 +60,14 @@ function [ y, t, e] = numerical( fy, fy_prime, y0,...
         for n = 2:size(y,2)
             y(n) = y(n-1)*(20-7*dt*(y(n-1)-20));
             y(n) = y(n)/(7*dt*y(n-1)+20);
+            y(n) = L1(y(n-1), dt);
         end
     
     elseif  strcmp(method,'Adams-Moulton L2')
         for n = 2:size(y,2)
             y(n) = y(n-1)*(20-7*dt*(y(n-1)-10));
             y(n) = y(n)/(7*dt*(y(n-1)-10)+20);
+            y(n) = L2(y(n-1), dt);
         end
     end
     t = toc;
