@@ -1,5 +1,6 @@
 function [ x r ] = nsolve( f, fp, x0, e )
 %NSOLVE Newton's method to find roots of the function f
+%   Branched
 %   Detailed explanation goes here
     r = true;
     x = x0;
